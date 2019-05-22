@@ -235,6 +235,35 @@ If you don't see a command prompt, try pressing enter.
 / # wget -O - <NGINX_POD_IP>
 ```
 
+# Testing
+
+## E2E testing
+
+E2E testing purpose is to validate submariner behaviour from an integration point of
+view. It needs to be executed in connection to an existing set of clusters.
+
+To execute the E2E tests:
+
+  ```bash
+  cd test/e2e
+  go test -args -kubeconfig=/path/to/kubeconfig
+  ```
+
+If you want to execute just a subset of the available E2E tests, you can use:
+
+  ```bash
+  cd test/e2e
+  go test -args -kubeconfig=/path/to/kubeconfig --ginkgo.focus='dataplane'
+  ```
+
+It may be helpful to use the [delve debugger](https://github.com/derekparker/delve)
+to gain insight into the test:
+
+  ```bash
+  cd test/e2e
+  dlv test
+  ```
+
 # Known Issues/Notes
 
 ### AWS Notes
