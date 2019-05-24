@@ -28,6 +28,7 @@ import (
 	"github.com/onsi/gomega"
 
 	"github.com/rancher/submariner/test/e2e/framework"
+	_ "github.com/rancher/submariner/test/e2e/example"
 )
 
 func RunE2ETests(t *testing.T) {

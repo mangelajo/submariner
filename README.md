@@ -246,15 +246,83 @@ To execute the E2E tests:
 
   ```bash
   cd test/e2e
-  go test -args -kubeconfig=/path/to/kubeconfig
+  go test -args -kubeconfig=/path/to/kubeconfig -ginkgo.randomizeAllSpecs
   ```
 
 If you want to execute just a subset of the available E2E tests, you can use:
 
   ```bash
   cd test/e2e
-  go test -args -kubeconfig=/path/to/kubeconfig --ginkgo.focus='dataplane'
+  go test -args -kubeconfig=/path/to/kubeconfig --ginkgo.focus=dataplane \
+     -ginkgo.randomizeAllSpecs
   ```
+
+It's possible to generate jUnit XML report files
+  ```bash
+  cd test/e2e
+  go test -args -ginkgo.v -report-dir ./junit -ginkgo.randomizeAllSpecs
+  ```
+
+Suggested arguments
+  ```
+  -test.v       : verbose output from go test
+  -ginkgo.v     : verbose output from ginkgo
+  -ginkgo.trace : output stack track on failure
+  -ginkgo.randomizeAllSpecs  : prevent test-ordering dependencies from creeping in
+  ```
+
+This is an example of how a E2E test run looks like
+```
+$ export KUBECONFIG=/Users/ajo/Documents/work/redhat/skynet-tools/creds/kubeconfig-c0_master
+$ go test -args -ginkgo.v -report-dir junit
+Running Suite: Submariner E2E suite
+===================================
+Random Seed: 1558715716
+Will run 2 of 2 specs
+
+[example] Basic example to demonstrate how to write tests using the framework
+  Should be able to list existing nodes on the cluster
+  /Users/ajo/go/src/github.com/rancher/submariner/test/e2e/example/example.go:35
+STEP: Creating a kubernetes client
+May 24 18:35:16.996: INFO: >>> kubeConfig: /Users/ajo/Documents/work/redhat/skynet-tools/creds/kubeconfig-c0_master
+STEP: Building a namespace api object, basename basic-example
+STEP: Creating a namespace to execute the test in
+STEP: Created test namespace e2e-tests-basic-example-j447f
+STEP: Requesting node list from API
+May 24 18:35:17.930: INFO: Detected node with IP: 10.0.0.14
+May 24 18:35:17.930: INFO: Detected node with IP: 10.0.0.7
+May 24 18:35:17.930: INFO: Detected node with IP: 10.0.0.9
+STEP: Destroying namespace "e2e-tests-basic-example-j447f" for this suite.
+•
+------------------------------
+[example] Basic example to demonstrate how to write tests using the framework
+  Should be able to create a pod using the provided client
+  /Users/ajo/go/src/github.com/rancher/submariner/test/e2e/example/example.go:39
+STEP: Creating a kubernetes client
+May 24 18:35:18.086: INFO: >>> kubeConfig: /Users/ajo/Documents/work/redhat/skynet-tools/creds/kubeconfig-c0_master
+STEP: Building a namespace api object, basename basic-example
+STEP: Creating a namespace to execute the test in
+STEP: Created test namespace e2e-tests-basic-example-pcxxv
+STEP: Creating a bunch of pods
+STEP: Waiting for the example-pod(s) to be scheduled and running
+STEP: Collecting pod ClusterIPs just for fun
+May 24 18:35:29.241: INFO: Detected pod with IP: 10.129.0.15
+May 24 18:35:29.241: INFO: Detected pod with IP: 10.130.0.16
+May 24 18:35:29.241: INFO: Detected pod with IP: 10.128.0.16
+STEP: Destroying namespace "e2e-tests-basic-example-pcxxv" for this suite.
+
+• [SLOW TEST:11.312 seconds]
+[example] Basic example to demonstrate how to write tests using the framework
+/Users/ajo/go/src/github.com/rancher/submariner/test/e2e/example/example.go:33
+  Should be able to create a pod using the provided client
+  /Users/ajo/go/src/github.com/rancher/submariner/test/e2e/example/example.go:39
+------------------------------
+
+Ran 2 of 2 Specs in 12.404 seconds
+SUCCESS! -- 2 Passed | 0 Failed | 0 Pending | 0 Skipped
+PASS
+ok  	github.com/rancher/submariner/test/e2e	12.453s
+```
 
 It may be helpful to use the [delve debugger](https://github.com/derekparker/delve)
 to gain insight into the test:
@@ -262,6 +330,16 @@ to gain insight into the test:
   ```bash
   cd test/e2e
   dlv test
+  ```
+
+  When using delve please note, the equivalent of `go test -args` is `dlv test --`,
+  dlv test treats both single and double quotes literally.
+  Neither `-ginkgo.focus="mytest"` nor `-ginkgo.focus='mytest'` will match `mytest`
+  `-ginkgo.focus=mytest` is required, for example:
+
+  ```bash
+  cd test/e2e
+  dlv test -- -ginkgo.v -ginkgo.focus=mytest
   ```
 
 # Known Issues/Notes
