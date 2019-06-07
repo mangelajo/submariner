@@ -1,10 +1,28 @@
 #!/bin/bash
 set -e
 
-cd $(dirname $0)
+DIR=$(dirname $0)
+cd $DIR
 ./test
 ./build
 ./build-routeagent
 ./download
 ./package
-./../scripts/kind-e2e/e2e.sh
+
+# ensure that under failure circumstances the kind clusters are cleaned up
+function cleanup {
+   $DIR/kind-e2e/e2e.sh -c
+}
+
+trap cleanup EXIT
+
+# deploy the kind clusters along with the compiled submariner images
+./kind-e2e/e2e.sh -k
+
+# run the E2E tests, writing all to the output directory
+cd ../test/e2e
+mkdir -p ../../output
+
+export KUBECONFIG=$(kind get kubeconfig-path --name=cluster1):$(kind get kubeconfig-path --name=cluster2):$(kind get kubeconfig-path --name=cluster3)
+go test -args -ginkgo.v -dp-context cluster2 -dp-context cluster3 -ginkgo.randomizeAllSpecs \
+        -report-dir ../../output/junit 2>&1 | tee ../../output/e2e-tests.log
