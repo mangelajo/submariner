@@ -15,13 +15,10 @@ TARGETS := $(shell ls scripts)
 $(TARGETS): .dapper
 	./.dapper -m bind $@ $(status) $(version) $(logging) $(kubefed)
 
-trash: .dapper
-	./.dapper -m bind trash
-
-trash-keep: .dapper
-	./.dapper -m bind trash -k
+vendor: .dapper
+	./.dapper -m bind sh -c "GO111MODULE=on go mod vendor"
 
 .DEFAULT_GOAL := ci
 
-.PHONY: $(TARGETS)
+.PHONY: $(TARGETS) vendor
 
