@@ -199,9 +199,11 @@ function verify_subm_engine_pod() {
 
   kubectl get pod $subm_engine_pod_name --namespace=$subm_ns -o json
   kubectl get pod $subm_engine_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..image}' | grep submariner:local
-  kubectl get pod $subm_engine_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..securityContext.capabilities.add}' | grep ALL
-  kubectl get pod $subm_engine_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..securityContext.allowPrivilegeEscalation}' | grep "true"
-  kubectl get pod $subm_engine_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..securityContext.privileged}' | grep "true"
+  # TODO(majopela): I'm keeping this one commented out until dfarrell's patch to set to ALL and other escalation privileges is merged
+  # kubectl get pod $subm_engine_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..securityContext.capabilities.add}' | grep ALL
+  # kubectl get pod $subm_engine_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..securityContext.allowPrivilegeEscalation}' | grep "true"
+  # kubectl get pod $subm_engine_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..securityContext.privileged}' | grep "true"
+
   kubectl get pod $subm_engine_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..command}' | grep submariner.sh
   kubectl get pod $subm_engine_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..env}'
   kubectl get pod $subm_engine_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..env}' | grep "name:SUBMARINER_NAMESPACE value:$subm_ns"
@@ -212,7 +214,7 @@ function verify_subm_engine_pod() {
     kubectl get pod $subm_engine_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..env}' | grep "name:SUBMARINER_SERVICECIDR value:$serviceCidr_cluster3"
     kubectl get pod $subm_engine_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..env}' | grep "name:SUBMARINER_CLUSTERCIDR value:$clusterCidr_cluster3"
   fi
-  if [[ $operator = true ]]; then
+  if [ "$deploy_operator" = true ]; then
     kubectl get pod $subm_engine_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..env}' | grep "name:SUBMARINER_TOKEN value:$subm_token"
   else
     # FIXME: This token value is null with default Helm deploy
@@ -254,7 +256,7 @@ function verify_subm_routeagent_pod() {
     kubectl get pod $subm_routeagent_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..env}' | grep "name:SUBMARINER_NAMESPACE value:$subm_ns"
     kubectl get pod $subm_routeagent_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..env}' | grep "name:SUBMARINER_CLUSTERID value:$context"
     kubectl get pod $subm_routeagent_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..env}' | grep "name:SUBMARINER_DEBUG value:$subm_debug"
-    if [[ $operator = true ]]; then
+    if [ "$deploy_operator" = true ]; then
       # FIXME: Use submariner-routeagent SA vs submariner-operator when doing Operator deploys
       kubectl get pod $subm_routeagent_pod_name --namespace=$subm_ns -o jsonpath='{.spec.serviceAccount}' | grep submariner-operator
     else
@@ -313,7 +315,7 @@ function verify_subm_engine_container() {
     kubectl exec -it $subm_engine_pod_name --namespace=$subm_ns -- env | grep "SUBMARINER_SERVICECIDR=$serviceCidr_cluster3"
     kubectl exec -it $subm_engine_pod_name --namespace=$subm_ns -- env | grep "SUBMARINER_CLUSTERCIDR=$clusterCidr_cluster3"
   fi
-  if [[ $operator = true ]]; then
+  if [ "$deploy_operator" = true ]; then
     kubectl exec -it $subm_engine_pod_name --namespace=$subm_ns -- env | grep "SUBMARINER_TOKEN=$subm_token"
   else
     # FIXME: This is null for Helm-based deploys
@@ -397,7 +399,7 @@ function verify_subm_engine_secrets() {
   # Show all SubM secrets
   kubectl get secrets -n $subm_ns
 
-  if [[ $operator = true ]]; then
+  if [ "$deploy_operator" = true ]; then
     # FIXME: Should use SA specific for Engine, not shared with the operator
     subm_engine_secret_name=$(kubectl get secrets -n $subm_ns -o jsonpath="{.items[?(@.metadata.annotations['kubernetes\.io/service-account\.name']=='$operator_deployment_name')].metadata.name}")
   else
@@ -431,7 +433,7 @@ function verify_subm_routeagent_secrets() {
   kubectl get secrets -n $subm_ns
 
 
-  if [[ $operator = true ]]; then
+  if [ "$deploy_operator" = true ]; then
     # FIXME: Should use SA specific for Routeagent, not shared with the operator
     subm_routeagent_secret_name=$(kubectl get secrets -n $subm_ns -o jsonpath="{.items[?(@.metadata.annotations['kubernetes\.io/service-account\.name']=='$operator_deployment_name')].metadata.name}")
   else
