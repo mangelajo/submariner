@@ -198,10 +198,17 @@ function kind_import_images() {
     docker tag rancher/submariner:dev submariner:local
     docker tag rancher/submariner-route-agent:dev submariner-route-agent:local
 
+    if [[ "$deploy_operator" = true ]]; then
+       docker tag quay.io/submariner/submariner-operator:dev submariner-operator:local
+    fi
+
     for i in 2 3; do
         echo "Loading submariner images in to cluster${i}..."
         kind --name cluster${i} load docker-image submariner:local
         kind --name cluster${i} load docker-image submariner-route-agent:local
+        if [[ "$deploy_operator" = true ]]; then
+             kind --name cluster${i} load docker-image submariner-operator:local
+	fi
     done
 }
 

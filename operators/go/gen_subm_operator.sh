@@ -15,16 +15,9 @@ op_gen_dir=$(pwd)
 op_out_dir=$op_gen_dir/submariner-operator
 
 function setup_prereqs(){
-  if ! command -v dep; then
-    # Install dep
-    curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-
-    # Make sure go/bin is in path
-    command -v dep
-  fi
-
   # NB: There must be a running K8s cluster pointed at by the exported KUBECONFIG
   # for operator-sdk to work (although this dependency doesn't make sense)
+  kind delete cluster || true # make sure any pre-existing cluster is removed, otherwise it fails in dapper
   kind create cluster || true
   export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"
   kubectl config use-context kubernetes-admin@kind
@@ -150,25 +143,6 @@ function add_subm_routeagent_to_operator() {
   popd
 }
 
-function build_subm_operator() {
-  pushd $op_dir
-  go mod vendor
-  # This seems like a bug in operator-sdk, that this is needed?
-  # NB: These fail for some people with missing "latest" tag error
-  go get k8s.io/kube-state-metrics/pkg/collector || true
-  go get k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1 || true
-  go get github.com/coreos/prometheus-operator/pkg/apis/monitoring || true
-
-  operator-sdk build quay.io/submariner/submariner-operator:$version --verbose
-  if [[ $push_image = true ]]; then
-    docker push quay.io/submariner/submariner-operator:$version
-  else
-    echo "Skipping pushing SubM Operator image to Quay"
-  fi
-
-  popd
-}
-
 function export_subm_op() {
   rm -rf $op_out_dir
   cp -a $op_dir/. $op_out_dir/
@@ -181,6 +155,5 @@ setup_prereqs
 initialize_subm_operator
 add_subm_engine_to_operator
 add_subm_routeagent_to_operator
-build_subm_operator
 
 export_subm_op
