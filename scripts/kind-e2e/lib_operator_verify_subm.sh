@@ -1,4 +1,8 @@
-set -ex
+# This should only be sourced
+if [ "${0##*/}" = "lib_operator_verify_subm.sh" ]; then
+    echo "Don't run me, source me" >&2
+    exit 1
+fi
 
 function verify_subm_gateway_label() {
   kubectl get node $context-worker -o jsonpath='{.metadata.labels}' | grep submariner.io/gateway:true
@@ -195,12 +199,11 @@ function verify_subm_engine_pod() {
 
   kubectl get pod $subm_engine_pod_name --namespace=$subm_ns -o json
   kubectl get pod $subm_engine_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..image}' | grep submariner:local
-  if [[ $helm = true ]]; then
-    kubectl get pod $subm_engine_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..securityContext.capabilities.add}' | grep ALL
-  fi
-  if [ "$deploy_operator" = true ]; then
-    kubectl get pod $subm_engine_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..securityContext.capabilities.add}' | grep NET_ADMIN
-  fi
+  # TODO(majopela): I'm keeping this one commented out until dfarrell's patch to set to ALL and other escalation privileges is merged
+  # kubectl get pod $subm_engine_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..securityContext.capabilities.add}' | grep ALL
+  # kubectl get pod $subm_engine_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..securityContext.allowPrivilegeEscalation}' | grep "true"
+  # kubectl get pod $subm_engine_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..securityContext.privileged}' | grep "true"
+
   kubectl get pod $subm_engine_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..command}' | grep submariner.sh
   kubectl get pod $subm_engine_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..env}'
   kubectl get pod $subm_engine_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..env}' | grep "name:SUBMARINER_NAMESPACE value:$subm_ns"
