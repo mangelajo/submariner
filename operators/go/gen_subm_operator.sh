@@ -76,6 +76,8 @@ function add_subm_engine_to_operator() {
   sed -i '/SubmarinerSpec struct/a \ \ BrokerK8sCa string `json:"broker_k8s_ca"`' $types_file
   sed -i '/SubmarinerSpec struct/a \ \ CeIpsecPsk string `json:"ce_ipsec_psk"`' $types_file
   sed -i '/SubmarinerSpec struct/a \ \ CeIpsecDebug string `json:"ce_ipsec_debug"`' $types_file
+  sed -i '/SubmarinerSpec struct/a \ \ CeIPSecIKEPort int `json:"ceIPSecIKEPort,omitempty"`' $types_file
+  sed -i '/SubmarinerSpec struct/a \ \ CeIPSecNATTPort int `json:"ceIPSecNATTPort,omitempty"`' $types_file
 
   # Define status fields
   # TODO: Is this needed/right or legacy?
