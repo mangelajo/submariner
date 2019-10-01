@@ -220,10 +220,10 @@ function create_subm_vars() {
   routeagent_deployment_name=submariner-routeagent
   broker_deployment_name=submariner-k8s-broker
 
-  clusterCidr_cluster2=10.245.0.0/16
-  clusterCidr_cluster3=10.246.0.0/16
-  serviceCidr_cluster2=100.95.0.0/16
-  serviceCidr_cluster3=100.96.0.0/16
+  clusterCIDR_cluster2=10.245.0.0/16
+  clusterCIDR_cluster3=10.246.0.0/16
+  serviceCIDR_cluster2=100.95.0.0/16
+  serviceCIDR_cluster3=100.96.0.0/16
   natEnabled=false
   subm_routeagent_image_repo=submariner-route-agent
   subm_routeagent_image_tag=local
@@ -461,17 +461,20 @@ elif [[ $5 = helm ]]; then
     helm=true
     setup_cluster2_gateway
     setup_cluster3_gateway
-#    for i in 2 3; do
-#      context=cluster$i
-#      kubectl config use-context $context
-#
-#      verify_subm_engine_pod
-#      verify_subm_routeagent_pod
-#      verify_subm_engine_container
-#      verify_subm_routeagent_container
-#      verify_subm_engine_secrets
-#      verify_subm_routeagent_secrets
-#    done
+    for i in 2 3; do
+      context=cluster$i
+      kubectl config use-context $context
+
+      # The Helm deploy doesn't respect namespace config, hardcode to what it uses
+      subm_ns=submariner
+
+      verify_subm_engine_pod
+      verify_subm_routeagent_pod
+      verify_subm_engine_container
+      verify_subm_routeagent_container
+      verify_subm_engine_secrets
+      verify_subm_routeagent_secrets
+    done
 fi
 
 test_connection
