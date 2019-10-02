@@ -159,7 +159,7 @@ func newRouteAgentDaemonSet(cr *submarinerv1alpha1.Routeagent) *appsv1.DaemonSet
 					Containers: []corev1.Container{
 						{
 							Name:  "submariner-routeagent",
-							Image: "submariner-route-agent:local",
+							Image: cr.Spec.Image,
 							// FIXME: Should be entrypoint script, find/use correct file for routeagent
 							Command:         []string{"submariner-route-agent.sh"},
 							SecurityContext: &security_context_all_cap_allow_escal,
