@@ -436,6 +436,8 @@ if [ "$deploy_operator" = true ]; then
       deploy_subm_cr
       # Verify SubM CR
       verify_subm_cr
+      # Verify SubM Engine Deployment
+      verify_subm_engine_deployment
       # Verify SubM Engine Pod
       verify_subm_engine_pod
       # Verify SubM Engine container
@@ -472,6 +474,7 @@ elif [[ $5 = helm ]]; then
       # The Helm deploy doesn't respect namespace config, hardcode to what it uses
       subm_ns=submariner
 
+      verify_subm_engine_deployment
       verify_subm_engine_pod
       verify_subm_routeagent_daemonset
       verify_subm_routeagent_pod

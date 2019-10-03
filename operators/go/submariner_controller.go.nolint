@@ -4,9 +4,12 @@ import (
 	"context"
 	"strconv"
 
+	"k8s.io/apimachinery/pkg/util/intstr"
+
 	submarinerv1alpha1 "github.com/submariner-operator/submariner-operator/pkg/apis/submariner/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 
+	appv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -99,57 +102,110 @@ func (r *ReconcileSubmariner) Reconcile(request reconcile.Request) (reconcile.Re
 	//subm_engine_sa.Name = "submariner-engine"
 	//reqLogger.Info("Created a new SA", "SA.Name", subm_engine_sa.Name)
 
-	// Define a new Pod object
-	// TODO: Make this responsive to size
-	pod := newPodForCR(instance)
+	deployment := newDeploymentForCR(instance)
 
 	// Set Submariner instance as the owner and controller
-	if err := controllerutil.SetControllerReference(instance, pod, r.scheme); err != nil {
+	if err := controllerutil.SetControllerReference(instance, deployment, r.scheme); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	// Check if this Pod already exists
-	found := &corev1.Pod{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, found)
+	foundDeployment := &appv1.Deployment{}
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: deployment.Name, Namespace: deployment.Namespace}, foundDeployment)
 	if err != nil && errors.IsNotFound(err) {
-		reqLogger.Info("Creating a new Pod", "Pod.Namespace", pod.Namespace, "Pod.Name", pod.Name)
-		err = r.client.Create(context.TODO(), pod)
+		reqLogger.Info("Creating a new Deployment",
+			"Deployment.Namespace", deployment.Namespace, "Deployment.Name", deployment.Name)
+		err = r.client.Create(context.TODO(), deployment)
 		if err != nil {
 			return reconcile.Result{}, err
 		}
 
-		// Pod created successfully - don't requeue
 		return reconcile.Result{}, nil
 	} else if err != nil {
 		return reconcile.Result{}, err
 	}
 
-	// Pod already exists - don't requeue
-	reqLogger.Info("Skip reconcile: Pod already exists", "Pod.Namespace", found.Namespace, "Pod.Name", found.Name)
+	reqLogger.Info("Skip reconcile: Deployment already exists",
+		"Deployment.Namespace", foundDeployment.Namespace, "Deployment.Name", foundDeployment.Name)
 	return reconcile.Result{}, nil
 }
 
+func newDeploymentForCR(cr *submarinerv1alpha1.Submariner) *appv1.Deployment {
+
+	labels := map[string]string{
+		"app":       "submariner-engine",
+		"component": "engine",
+	}
+
+	replicas := int32(1)
+	revisionHistoryLimit := int32(5)
+	progressDeadlineSeconds := int32(600)
+
+	maxSurge := intstr.FromInt(1)
+	maxUnavailable := intstr.FromInt(0)
+
+	deployment := &appv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Labels:    labels,
+			Namespace: cr.Namespace,
+			Name:      "submariner",
+		},
+		Spec: appv1.DeploymentSpec{
+			Replicas: &replicas,
+			Selector: &metav1.LabelSelector{MatchLabels: map[string]string{"app": "submariner-engine"}},
+			Template: newPodTemplateForCR(cr),
+			Strategy: appv1.DeploymentStrategy{
+				RollingUpdate: &appv1.RollingUpdateDeployment{
+					MaxSurge:       &maxSurge,
+					MaxUnavailable: &maxUnavailable,
+				},
+				Type: appv1.RollingUpdateDeploymentStrategyType,
+			},
+			RevisionHistoryLimit:    &revisionHistoryLimit,
+			ProgressDeadlineSeconds: &progressDeadlineSeconds,
+		},
+	}
+
+	return deployment
+}
+
 // newPodForCR returns a submariner pod with the same fields as the cr
-func newPodForCR(cr *submarinerv1alpha1.Submariner) *corev1.Pod {
+func newPodTemplateForCR(cr *submarinerv1alpha1.Submariner) corev1.PodTemplateSpec {
 	labels := map[string]string{
 		"app": "submariner-engine",
 	}
 
 	// Create privilaged security context for Engine pod
 	// FIXME: Seems like these have to be a var, so can pass pointer to bool var to SecurityContext. Cleaner option?
-	allow_privilege_escalation := true
+	allowPrivilegeEscalation := true
 	privileged := true
-	run_as_non_root := false
-	security_context_all_caps_privilaged := corev1.SecurityContext{Capabilities: &corev1.Capabilities{Add: []corev1.Capability{"ALL"}}, AllowPrivilegeEscalation: &allow_privilege_escalation, Privileged: &privileged, RunAsNonRoot: &run_as_non_root}
+	runAsNonRoot := false
+	readOnlyRootFilesystem := false
+
+	security_context_all_caps_privilaged := corev1.SecurityContext{
+		Capabilities:             &corev1.Capabilities{Add: []corev1.Capability{"ALL"}},
+		AllowPrivilegeEscalation: &allowPrivilegeEscalation,
+		Privileged:               &privileged,
+		ReadOnlyRootFilesystem:   &readOnlyRootFilesystem,
+		RunAsNonRoot:             &runAsNonRoot}
 
 	// Create Pod
-	pod := &corev1.Pod{
+	terminationGracePeriodSeconds := int64(0)
+	podTemplate := corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      cr.Name + "-pod",
-			Namespace: cr.Namespace,
-			Labels:    labels,
+			Labels: labels,
 		},
 		Spec: corev1.PodSpec{
+			Affinity: &corev1.Affinity{
+				PodAntiAffinity: &corev1.PodAntiAffinity{
+					RequiredDuringSchedulingIgnoredDuringExecution: []corev1.PodAffinityTerm{{
+						LabelSelector: &metav1.LabelSelector{
+							MatchLabels: labels,
+						},
+						TopologyKey: "kubernetes.io/hostname",
+					}},
+				},
+			},
+			NodeSelector: map[string]string{"submariner.io/gateway": "true"},
 			Containers: []corev1.Container{
 				{
 					Name: "submariner",
@@ -178,19 +234,22 @@ func newPodForCR(cr *submarinerv1alpha1.Submariner) *corev1.Pod {
 				},
 			},
 			// TODO: Use SA submariner-engine or submariner?
-			ServiceAccountName: "submariner-operator",
-			HostNetwork:        true,
+			ServiceAccountName:            "submariner-operator",
+			HostNetwork:                   true,
+			TerminationGracePeriodSeconds: &terminationGracePeriodSeconds,
+			RestartPolicy:                 corev1.RestartPolicyAlways,
+			DNSPolicy:                     corev1.DNSClusterFirst,
 		},
 	}
 	if cr.Spec.CeIPSecIKEPort != 0 {
-		pod.Spec.Containers[0].Env = append(pod.Spec.Containers[0].Env,
+		podTemplate.Spec.Containers[0].Env = append(podTemplate.Spec.Containers[0].Env,
 			corev1.EnvVar{Name: "CE_IPSEC_IKEPORT", Value: strconv.Itoa(cr.Spec.CeIPSecIKEPort)})
 	}
 
 	if cr.Spec.CeIPSecNATTPort != 0 {
-		pod.Spec.Containers[0].Env = append(pod.Spec.Containers[0].Env,
+		podTemplate.Spec.Containers[0].Env = append(podTemplate.Spec.Containers[0].Env,
 			corev1.EnvVar{Name: "CE_IPSEC_NATTPORT", Value: strconv.Itoa(cr.Spec.CeIPSecNATTPort)})
 	}
 
-	return pod
+	return podTemplate
 }
