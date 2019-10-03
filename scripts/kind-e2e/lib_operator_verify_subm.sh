@@ -249,7 +249,7 @@ function verify_subm_engine_pod() {
 function verify_subm_routeagent_daemonset() {
   # Simple verification to ensure that the routeagent daemonset has been created and becomes ready
    SECONDS="0"
-   while ! kubectl get DaemonSets -l app=$routeagent_deployment_name -n $subm_ns | grep -q submariner-; do
+   while ! kubectl get DaemonSets -l app=$routeagent_deployment_name -n $subm_ns | grep -q routeagent; do
      if [ $SECONDS -gt 120 ]; then
         echo "Timeout waiting for route agent DaemonSet creation"
         exit 1
@@ -268,8 +268,8 @@ function verify_subm_routeagent_daemonset() {
         exit 1
      else
 
-        desiredNumberScheduled=$(kubectl get DaemonSet submariner-routeagent -n $subm_ns -o jsonpath='{.status.desiredNumberScheduled}')
-        numberReady=$(kubectl get DaemonSet submariner-routeagent -n $subm_ns -o jsonpath='{.status.numberReady}')
+        desiredNumberScheduled=$(kubectl get DaemonSet routeagent -n $subm_ns -o jsonpath='{.status.desiredNumberScheduled}')
+        numberReady=$(kubectl get DaemonSet routeagent -n $subm_ns -o jsonpath='{.status.numberReady}')
 
         ((SECONDS+=2))
         sleep 2
@@ -292,6 +292,8 @@ function verify_subm_routeagent_pod() {
     kubectl get pod $subm_routeagent_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..securityContext.capabilities.add}' | grep ALL
     kubectl get pod $subm_routeagent_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..securityContext.allowPrivilegeEscalation}' | grep "true"
     kubectl get pod $subm_routeagent_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..securityContext.privileged}' | grep "true"
+    kubectl get pod $subm_routeagent_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..securityContext.readOnlyRootFilesystem}' | grep "false"
+    kubectl get pod $subm_routeagent_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..securityContext.runAsNonRoot}' | grep "false"
     kubectl get pod $subm_routeagent_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..command}' | grep submariner-route-agent.sh
     kubectl get pod $subm_routeagent_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..env}'
     kubectl get pod $subm_routeagent_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..env}' | grep "name:SUBMARINER_NAMESPACE value:$subm_ns"
@@ -317,6 +319,11 @@ function verify_subm_routeagent_pod() {
     kubectl get pod $subm_routeagent_pod_name --namespace=$subm_ns -o jsonpath='{.spec..volumes}' | grep "path:/"
     kubectl get pod $subm_routeagent_pod_name --namespace=$subm_ns -o jsonpath='{.status.phase}' | grep Running
     kubectl get pod $subm_routeagent_pod_name --namespace=$subm_ns -o jsonpath='{.metadata.namespace}' | grep $subm_ns
+    GRACE_PERIOD=$(kubectl get pod $subm_routeagent_pod_name --namespace=$subm_ns -o jsonpath='{.spec.terminationGracePeriodSeconds}')
+    if [ "$GRACE_PERIOD" != "0" ]; then
+      exit 1
+    fi
+
   done
 }
 
