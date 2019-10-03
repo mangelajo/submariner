@@ -105,49 +105,6 @@ function add_subm_engine_to_operator() {
   popd
 }
 
-function add_subm_routeagent_to_operator() {
-  pushd $op_dir
-  api_version=submariner.io/v1alpha1
-  kind=Routeagent
-  operator-sdk add api --api-version=$api_version --kind=$kind || true
-
-  # Define spec fields
-  types_file=pkg/apis/submariner/v1alpha1/routeagent_types.go
-  sed -i '/RouteagentSpec struct/a \ \ Namespace string `json:"namespace"`' $types_file
-  sed -i '/RouteagentSpec struct/a \ \ ClusterID string `json:"clusterID"`' $types_file
-  sed -i '/RouteagentSpec struct/a \ \ Debug string `json:"debug"`' $types_file
-  sed -i '/RouteagentSpec struct/a \ \ ClusterCIDR string `json:"clusterCIDR"`' $types_file
-  sed -i '/RouteagentSpec struct/a \ \ ServiceCIDR string `json:"serviceCIDR"`' $types_file
-  sed -i '/RouteagentSpec struct/a \ \ Image string `json:"image"`' $types_file
-
-
-  # Define status fields
-  # TODO: Is this needed/right or legacy?
-  sed -i '/SubmarinerStatus struct/a \ \ PodNames []string `json:"pod_names"`' $types_file
-
-  # Fix formatting of types file
-  go fmt $types_file
-
-  # Show completed types file
-  cat $types_file
-
-  # Must rebuild after modifying types file
-  operator-sdk generate k8s
-  if [[ $openapi_checks_enabled = true ]]; then
-    operator-sdk generate openapi
-  else
-    operator-sdk generate openapi || true
-  fi
-
-  operator-sdk add controller --api-version=$api_version --kind=$kind
-
-  controller_file_src=$op_gen_dir/routeagent_controller.go.nolint
-  controller_file_dst=pkg/controller/routeagent/routeagent_controller.go
-  cp $controller_file_src $controller_file_dst
-
-  popd
-}
-
 function export_subm_op() {
   rm -rf $op_out_dir
   cp -a $op_dir/. $op_out_dir/
@@ -159,6 +116,5 @@ setup_prereqs
 # Create SubM Operator
 initialize_subm_operator
 add_subm_engine_to_operator
-add_subm_routeagent_to_operator
 
 export_subm_op

@@ -410,8 +410,6 @@ if [ "$deploy_operator" = true ]; then
       verify_endpoints_crd
       create_subm_clusters_crd
       verify_clusters_crd
-      create_routeagents_crd
-      verify_routeagents_crd
 
       # Add SubM gateway labels
       add_subm_gateway_label
@@ -445,12 +443,6 @@ if [ "$deploy_operator" = true ]; then
       # Verify Engine secrets
       verify_subm_engine_secrets
 
-      # Create Routeagent CR
-      create_routeagent_cr
-      # Deploy Routeagent CR
-      deploy_routeagent_cr
-      # Verify Routeagent CR
-      verify_routeagent_cr
       # Verify SubM Routeagent DaemonSet
       verify_subm_routeagent_daemonset
       # Verify SubM Routeagent Pods

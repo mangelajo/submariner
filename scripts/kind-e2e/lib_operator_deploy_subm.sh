@@ -81,35 +81,6 @@ EOF
   popd
 }
 
-function create_routeagents_crd() {
-  pushd $subm_op_dir
-
-  routeagents_crd_file=deploy/crds/submariner.io_routeagents_crd.yaml
-
-  # TODO: Can/should we create this with Op-SDK?
-cat <<EOF > $routeagents_crd_file
-apiVersion: apiextensions.k8s.io/v1beta1
-kind: CustomResourceDefinition
-metadata:
-  name: routeagents.submariner.io
-  annotations:
-spec:
-  group: submariner.io
-  version: v1alpha1
-  names:
-    kind: Routeagent
-    plural: routeagents
-  scope: Namespaced
-EOF
-
-  cat $routeagents_crd_file
-
-  # Create routeagents CRD
-  create_resource_if_missing crd routeagents.submariner.io $routeagents_crd_file
-
-  popd
-}
-
 function deploy_subm_operator() {
   pushd $subm_op_dir
 
@@ -200,36 +171,6 @@ function create_subm_cr() {
   popd
 }
 
-function create_routeagent_cr() {
-  pushd $subm_op_dir
-
-  cr_file=deploy/crds/routeagent-cr-$context.yaml
-
-  cp deploy/crds/submariner.io_v1alpha1_routeagent_cr.yaml $cr_file
-
-  sed -i "s|name: example-routeagent|name: $routeagent_deployment_name|g" $cr_file
-
-  # These all need to end up in pod container/environment vars
-  sed -i "/spec:/a \ \ namespace: $subm_ns" $cr_file
-  sed -i "/spec:/a \ \ clusterID: $context" $cr_file
-  sed -i "/spec:/a \ \ debug: \"$subm_debug\"" $cr_file
-  if [[ $context = cluster2 ]]; then
-    sed -i "/spec:/a \ \ serviceCIDR: $serviceCIDR_cluster2" $cr_file
-    sed -i "/spec:/a \ \ clusterCIDR: $clusterCIDR_cluster2" $cr_file
-  elif [[ $context = cluster3 ]]; then
-    sed -i "/spec:/a \ \ serviceCIDR: $serviceCIDR_cluster3" $cr_file
-    sed -i "/spec:/a \ \ clusterCIDR: $clusterCIDR_cluster3" $cr_file
-  fi
-
-  # These all need to end up in pod containers/submariner vars
-  sed -i "/spec:/a \ \ image: $subm_routeagent_image_repo:$subm_routeagent_image_tag" $cr_file
-
-  # Show completed CR file for debugging help
-  cat $cr_file
-
-  popd
-}
-
 function deploy_subm_cr() {
   pushd $subm_op_dir
 
@@ -238,20 +179,6 @@ function deploy_subm_cr() {
 
   # Create SubM CR if it doesn't exist
   if kubectl get submariner 2>&1 | grep -q "No resources found"; then
-    kubectl apply --namespace=$subm_ns -f $cr_file
-  fi
-
-  popd
-}
-
-function deploy_routeagent_cr() {
-  pushd $subm_op_dir
-
-  # FIXME: This must match cr_file value used in create_routeagent_cr fn
-  cr_file=deploy/crds/routeagent-cr-$context.yaml
-
-  # Create SubM CR if it doesn't exist
-  if kubectl get routeagent 2>&1 | grep -q "No resources found"; then
     kubectl apply --namespace=$subm_ns -f $cr_file
   fi
 

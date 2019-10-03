@@ -104,24 +104,6 @@ function verify_clusters_crd() {
   kubectl get crd $crd_name -o jsonpath='{.status.acceptedNames.kind}' | grep Cluster
 }
 
-function verify_routeagents_crd() {
-  crd_name=routeagents.submariner.io
-
-  # Verify presence of CRD
-  kubectl get crds | grep routeagents.submariner.io
-
-  # Show full CRD
-  kubectl get crd routeagents.submariner.io -o yaml
-
-  # Verify details of CRD
-  kubectl get crd $crd_name -o jsonpath='{.metadata.name}' | grep $crd_name
-  kubectl get crd $crd_name -o jsonpath='{.spec.scope}' | grep Namespaced
-  kubectl get crd $crd_name -o jsonpath='{.spec.group}' | grep submariner.io
-  kubectl get crd $crd_name -o jsonpath='{.spec.version}' | grep v1alpha1
-  kubectl get crd $crd_name -o jsonpath='{.spec.names.kind}' | grep Routeagent
-  kubectl get crd $crd_name -o jsonpath='{.status.acceptedNames.kind}' | grep Routeagent
-}
-
 function verify_subm_cr() {
   # TODO: Use $engine_deployment_name here?
 
@@ -160,31 +142,6 @@ function verify_subm_cr() {
     kubectl get submariner $deployment_name --namespace=$subm_ns -o jsonpath='{.spec.clusterCIDR}' | grep $clusterCIDR_cluster3
   fi
   kubectl get submariner $deployment_name --namespace=$subm_ns -o jsonpath='{.spec.token}' | grep $subm_token
-}
-
-function verify_routeagent_cr() {
-  # Verify Routeagent CR presence
-  kubectl get routeagent --namespace=$subm_ns | grep $routeagent_deployment_name
-
-  # Show full Routeagent CR JSON
-  kubectl get routeagent $routeagent_deployment_name --namespace=$subm_ns -o json
-
-  # Verify Routeagent CR
-  kubectl get routeagent $routeagent_deployment_name --namespace=$subm_ns -o jsonpath='{.metadata.namespace}' | grep $subm_ns
-  kubectl get routeagent $routeagent_deployment_name --namespace=$subm_ns -o jsonpath='{.apiVersion}' | grep submariner.io/v1alpha1
-  kubectl get routeagent $routeagent_deployment_name --namespace=$subm_ns -o jsonpath='{.kind}' | grep Routeagent
-  kubectl get routeagent $routeagent_deployment_name --namespace=$subm_ns -o jsonpath='{.metadata.name}' | grep $routeagent_deployment_name
-  kubectl get routeagent $routeagent_deployment_name --namespace=$subm_ns -o jsonpath='{.spec.clusterID}' | grep $context
-  kubectl get routeagent $routeagent_deployment_name --namespace=$subm_ns -o jsonpath='{.spec.image}' | grep $subm_routeagent_image_repo:$subm_routeagent_image_tag
-  kubectl get routeagent $routeagent_deployment_name --namespace=$subm_ns -o jsonpath='{.spec.namespace}' | grep $subm_ns
-  kubectl get routeagent $routeagent_deployment_name --namespace=$subm_ns -o jsonpath='{.spec.debug}' | grep $subm_debug
-  if [[ $context = cluster2 ]]; then
-    kubectl get routeagent $routeagent_deployment_name --namespace=$subm_ns -o jsonpath='{.spec.serviceCIDR}' | grep $serviceCIDR_cluster2
-    kubectl get routeagent $routeagent_deployment_name --namespace=$subm_ns -o jsonpath='{.spec.clusterCIDR}' | grep $clusterCIDR_cluster2
-  elif [[ $context = cluster3 ]]; then
-    kubectl get routeagent $routeagent_deployment_name --namespace=$subm_ns -o jsonpath='{.spec.serviceCIDR}' | grep $serviceCIDR_cluster3
-    kubectl get routeagent $routeagent_deployment_name --namespace=$subm_ns -o jsonpath='{.spec.clusterCIDR}' | grep $clusterCIDR_cluster3
-  fi
 }
 
 function verify_subm_op_pod() {
