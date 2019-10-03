@@ -4,12 +4,14 @@ import (
 	"context"
 	"strconv"
 
+	"github.com/go-logr/logr"
+
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	submarinerv1alpha1 "github.com/submariner-operator/submariner-operator/pkg/apis/submariner/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 
-	appv1 "k8s.io/api/apps/v1"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -102,34 +104,74 @@ func (r *ReconcileSubmariner) Reconcile(request reconcile.Request) (reconcile.Re
 	//subm_engine_sa.Name = "submariner-engine"
 	//reqLogger.Info("Created a new SA", "SA.Name", subm_engine_sa.Name)
 
-	deployment := newDeploymentForCR(instance)
-
-	// Set Submariner instance as the owner and controller
-	if err := controllerutil.SetControllerReference(instance, deployment, r.scheme); err != nil {
+	if err = r.reconcileEngineDeployment(instance, reqLogger); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	foundDeployment := &appv1.Deployment{}
+	if err = r.reconcileRouteagentDaemonSet(instance, reqLogger); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	return reconcile.Result{}, nil
+}
+
+func (r *ReconcileSubmariner) reconcileEngineDeployment(instance *submarinerv1alpha1.Submariner, reqLogger logr.Logger) error {
+
+	var err error
+
+	deployment := newDeploymentForCR(instance)
+	// Set Submariner instance as the owner and controller
+	if err = controllerutil.SetControllerReference(instance, deployment, r.scheme); err != nil {
+		return err
+	}
+	foundDeployment := &appsv1.Deployment{}
 	err = r.client.Get(context.TODO(), types.NamespacedName{Name: deployment.Name, Namespace: deployment.Namespace}, foundDeployment)
 	if err != nil && errors.IsNotFound(err) {
 		reqLogger.Info("Creating a new Deployment",
 			"Deployment.Namespace", deployment.Namespace, "Deployment.Name", deployment.Name)
 		err = r.client.Create(context.TODO(), deployment)
 		if err != nil {
-			return reconcile.Result{}, err
+			return err
 		}
 
-		return reconcile.Result{}, nil
+		return nil
 	} else if err != nil {
-		return reconcile.Result{}, err
+		return err
 	}
-
 	reqLogger.Info("Skip reconcile: Deployment already exists",
 		"Deployment.Namespace", foundDeployment.Namespace, "Deployment.Name", foundDeployment.Name)
-	return reconcile.Result{}, nil
+	return nil
 }
 
-func newDeploymentForCR(cr *submarinerv1alpha1.Submariner) *appv1.Deployment {
+func (r *ReconcileSubmariner) reconcileRouteagentDaemonSet(instance *submarinerv1alpha1.Submariner, reqLogger logr.Logger) error {
+
+	var err error
+
+	daemonSet := newRouteAgentDaemonSet(instance)
+
+	// Set Routeagent instance as the owner and controller
+	if err = controllerutil.SetControllerReference(instance, daemonSet, r.scheme); err != nil {
+		return err
+	}
+
+	foundDaemonSet := &appsv1.DaemonSet{}
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: daemonSet.Name, Namespace: daemonSet.Namespace}, foundDaemonSet)
+	if err != nil && errors.IsNotFound(err) {
+		reqLogger.Info("Creating a new DaemonSet", "DaemonSet.Namespace", daemonSet.Namespace, "DaemonSet.Name", daemonSet.Name)
+		if err = r.client.Create(context.TODO(), daemonSet); err != nil {
+			return err
+		}
+		return nil
+	} else if err != nil {
+		return err
+	}
+
+	reqLogger.Info("Skip reconcile: DaemonSet already exists",
+		"DaemonSet.Namespace", foundDaemonSet.Namespace, "DaemonSet.Name", foundDaemonSet.Name)
+	return nil
+}
+
+func newDeploymentForCR(cr *submarinerv1alpha1.Submariner) *appsv1.Deployment {
 
 	labels := map[string]string{
 		"app":       "submariner-engine",
@@ -143,22 +185,22 @@ func newDeploymentForCR(cr *submarinerv1alpha1.Submariner) *appv1.Deployment {
 	maxSurge := intstr.FromInt(1)
 	maxUnavailable := intstr.FromInt(0)
 
-	deployment := &appv1.Deployment{
+	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels:    labels,
 			Namespace: cr.Namespace,
 			Name:      "submariner",
 		},
-		Spec: appv1.DeploymentSpec{
+		Spec: appsv1.DeploymentSpec{
 			Replicas: &replicas,
 			Selector: &metav1.LabelSelector{MatchLabels: map[string]string{"app": "submariner-engine"}},
 			Template: newPodTemplateForCR(cr),
-			Strategy: appv1.DeploymentStrategy{
-				RollingUpdate: &appv1.RollingUpdateDeployment{
+			Strategy: appsv1.DeploymentStrategy{
+				RollingUpdate: &appsv1.RollingUpdateDeployment{
 					MaxSurge:       &maxSurge,
 					MaxUnavailable: &maxUnavailable,
 				},
-				Type: appv1.RollingUpdateDeploymentStrategyType,
+				Type: appsv1.RollingUpdateDeploymentStrategyType,
 			},
 			RevisionHistoryLimit:    &revisionHistoryLimit,
 			ProgressDeadlineSeconds: &progressDeadlineSeconds,
@@ -251,4 +293,75 @@ func newPodTemplateForCR(cr *submarinerv1alpha1.Submariner) corev1.PodTemplateSp
 	}
 
 	return podTemplate
+}
+
+func newRouteAgentDaemonSet(cr *submarinerv1alpha1.Submariner) *appsv1.DaemonSet {
+	labels := map[string]string{
+		"app":       "submariner-routeagent",
+		"component": "routeagent",
+	}
+
+	matchLabels := map[string]string{
+		"app": "submariner-routeagent",
+	}
+
+	allowPrivilegeEscalation := true
+	privileged := true
+	readOnlyFileSystem := false
+	runAsNonRoot := false
+	security_context_all_cap_allow_escal := corev1.SecurityContext{
+		Capabilities:             &corev1.Capabilities{Add: []corev1.Capability{"ALL"}},
+		AllowPrivilegeEscalation: &allowPrivilegeEscalation,
+		Privileged:               &privileged,
+		ReadOnlyRootFilesystem:   &readOnlyFileSystem,
+		RunAsNonRoot:             &runAsNonRoot,
+	}
+
+	terminationGracePeriodSeconds := int64(0)
+
+	routeAgentDaemonSet := &appsv1.DaemonSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: cr.Namespace,
+			Name:      "routeagent",
+			Labels:    labels,
+		},
+		Spec: appsv1.DaemonSetSpec{
+			Selector: &metav1.LabelSelector{MatchLabels: matchLabels},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: labels,
+				},
+				Spec: corev1.PodSpec{
+					TerminationGracePeriodSeconds: &terminationGracePeriodSeconds,
+					Containers: []corev1.Container{
+						{
+							Name:  "submariner-routeagent",
+							Image: "submariner-route-agent:local",
+							// FIXME: Should be entrypoint script, find/use correct file for routeagent
+							Command:         []string{"submariner-route-agent.sh"},
+							SecurityContext: &security_context_all_cap_allow_escal,
+							VolumeMounts: []corev1.VolumeMount{
+								{Name: "host-slash", MountPath: "/host", ReadOnly: true},
+							},
+							Env: []corev1.EnvVar{
+								{Name: "SUBMARINER_NAMESPACE", Value: cr.Spec.Namespace},
+								{Name: "SUBMARINER_CLUSTERID", Value: cr.Spec.ClusterID},
+								{Name: "SUBMARINER_DEBUG", Value: cr.Spec.Debug},
+								{Name: "SUBMARINER_CLUSTERCIDR", Value: cr.Spec.ClusterCIDR},
+								{Name: "SUBMARINER_SERVICECIDR", Value: cr.Spec.ServiceCIDR},
+							},
+						},
+					},
+					// TODO: Use SA submariner-routeagent or submariner?
+					ServiceAccountName: "submariner-operator",
+					HostNetwork:        true,
+					Volumes: []corev1.Volume{
+						{Name: "host-slash", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: "/"}}},
+					},
+				},
+			},
+		},
+	}
+
+	return routeAgentDaemonSet
 }
