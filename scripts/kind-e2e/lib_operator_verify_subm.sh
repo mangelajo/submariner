@@ -11,30 +11,30 @@ function verify_subm_gateway_label() {
 
 function verify_subm_operator() {
   # Verify SubM namespace (ignore SubM Broker ns)
-  kubectl get ns | grep -v $subm_broker_ns | grep $subm_ns
+  kubectl get ns $subm_ns
 
   # Verify SubM Operator CRD
-  kubectl get crds | grep submariners.submariner.io
+  kubectl get crds submariners.submariner.io
   kubectl api-resources | grep submariners
 
   # Verify SubM Operator SA
-  kubectl get sa --namespace=$subm_ns | grep submariner-operator
+  kubectl get sa --namespace=$subm_ns submariner-operator
 
   # Verify SubM Operator role
-  kubectl get roles --namespace=$subm_ns | grep submariner-operator
+  kubectl get roles --namespace=$subm_ns submariner-operator
 
   # Verify SubM Operator role binding
-  kubectl get rolebindings --namespace=$subm_ns | grep submariner-operator
+  kubectl get rolebindings --namespace=$subm_ns submariner-operator
 
   # Verify SubM Operator deployment
-  kubectl get deployments --namespace=$subm_ns | grep submariner-operator
+  kubectl get deployments --namespace=$subm_ns submariner-operator
 }
 
 function verify_subm_crd() {
   crd_name=submariners.submariner.io
 
   # Verify presence of CRD
-  kubectl get crds | grep $crd_name
+  kubectl get crds $crd_name
 
   # Show full CRD
   kubectl get crd $crd_name -o yaml
@@ -69,7 +69,7 @@ function verify_endpoints_crd() {
   crd_name=endpoints.submariner.io
 
   # Verify presence of CRD
-  kubectl get crds | grep $crd_name
+  kubectl get crds $crd_name
 
   # Show full CRD
   kubectl get crd endpoints.submariner.io -o yaml
@@ -88,7 +88,7 @@ function verify_clusters_crd() {
   crd_name=clusters.submariner.io
 
   # Verify presence of CRD
-  kubectl get crds | grep clusters.submariner.io
+  kubectl get crds $crd_name
 
   # Show full CRD
   kubectl get crd clusters.submariner.io -o yaml

@@ -12,7 +12,6 @@ GOPATH=$HOME/go
 export GOPROXY=https://proxy.golang.org
 
 version=0.0.1
-push_image=false
 op_dir=$GOPATH/src/github.com/submariner-operator/submariner-operator
 op_gen_dir=$(pwd)
 op_out_dir=$op_gen_dir/submariner-operator
@@ -38,20 +37,9 @@ function initialize_subm_operator() {
   sed -i "s|REPLACE_IMAGE|quay.io/submariner/submariner-operator:$version|g" deploy/operator.yaml
   cat deploy/operator.yaml
 
-  # Create a definition namespace for SubM
-  ns_file=deploy/namespace.yaml
-cat <<EOF > $ns_file
-{
-  "apiVersion": "v1",
-  "kind": "Namespace",
-  "metadata": {
-    "name": "submariner",
-    "labels": {
-      "name": "submariner"
-    }
-  }
-}
-EOF
+  # Add example SubM namespace definition
+  cp $op_gen_dir/example_subm_ns.yaml deploy/namespace.yaml
+
   popd
 }
 

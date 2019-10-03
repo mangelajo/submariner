@@ -6,8 +6,7 @@ if [ "${0##*/}" = "lib_operator_deploy_subm.sh" ]; then
 fi
 
 openapi_checks_enabled=false
-subm_op_src_dir=$(realpath ../operators/go/submariner-operator)
-subm_op_dir=$subm_op_src_dir
+subm_op_dir=$(realpath ../operators/go/submariner-operator)
 
 function create_resource_if_missing() {
   resource_type=$1
@@ -94,7 +93,7 @@ function deploy_subm_operator() {
     kubectl create -f deploy/namespace.yaml
   fi
 
-  if ! kubectl get crds | grep submariners.submariner.io; then
+  if ! kubectl get crds submariners.submariner.io; then
     kubectl create -f deploy/crds/submariner.io_submariners_crd.yaml
   fi
 
