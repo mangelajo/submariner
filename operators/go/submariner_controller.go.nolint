@@ -208,7 +208,7 @@ func newPodTemplateForCR(cr *submarinerv1alpha1.Submariner) corev1.PodTemplateSp
 			NodeSelector: map[string]string{"submariner.io/gateway": "true"},
 			Containers: []corev1.Container{
 				{
-					Name: "submariner",
+					Name:  "submariner",
 					Image: cr.Spec.Image,
 					// TODO: Use var here
 					Command:         []string{"submariner.sh"},
