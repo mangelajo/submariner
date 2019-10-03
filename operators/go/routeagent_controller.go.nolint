@@ -130,15 +130,22 @@ func newRouteAgentDaemonSet(cr *submarinerv1alpha1.Routeagent) *appsv1.DaemonSet
 
 	allow_privilege_escalation := true
 	privileged := true
+	readOnlyFileSystem := false
+	runAsNonRoot := false
 	security_context_all_cap_allow_escal := corev1.SecurityContext{
 		Capabilities:             &corev1.Capabilities{Add: []corev1.Capability{"ALL"}},
 		AllowPrivilegeEscalation: &allow_privilege_escalation,
-		Privileged:               &privileged}
+		Privileged:               &privileged,
+		ReadOnlyRootFilesystem:   &readOnlyFileSystem,
+		RunAsNonRoot:             &runAsNonRoot,
+	}
+
+	terminationGracePeriodSeconds := int64(0)
 
 	routeAgentDaemonSet := &appsv1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: cr.Namespace,
-			Name:      "submariner-routeagent",
+			Name:      "routeagent",
 			Labels:    labels,
 		},
 		Spec: appsv1.DaemonSetSpec{
@@ -148,6 +155,7 @@ func newRouteAgentDaemonSet(cr *submarinerv1alpha1.Routeagent) *appsv1.DaemonSet
 					Labels: labels,
 				},
 				Spec: corev1.PodSpec{
+					TerminationGracePeriodSeconds: &terminationGracePeriodSeconds,
 					Containers: []corev1.Container{
 						{
 							Name:  "submariner-routeagent",
