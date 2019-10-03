@@ -212,6 +212,8 @@ function verify_subm_engine_pod() {
   kubectl get pod $subm_engine_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..securityContext.capabilities.add}' | grep ALL
   kubectl get pod $subm_engine_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..securityContext.allowPrivilegeEscalation}' | grep "true"
   kubectl get pod $subm_engine_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..securityContext.privileged}' | grep "true"
+  kubectl get pod $subm_engine_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..securityContext.readOnlyRootFilesystem}' | grep "false"
+  kubectl get pod $subm_engine_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..securityContext.runAsNonRoot}' | grep "false"
   kubectl get pod $subm_engine_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..command}' | grep submariner.sh
   kubectl get pod $subm_engine_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..env}'
   kubectl get pod $subm_engine_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..env}' | grep "name:SUBMARINER_NAMESPACE value:$subm_ns"
@@ -244,6 +246,38 @@ function verify_subm_engine_pod() {
   kubectl get pod $subm_engine_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..env}' | grep "name:CE_IPSEC_NATTPORT value:$ce_ipsec_nattport"
   kubectl get pod $subm_engine_pod_name --namespace=$subm_ns -o jsonpath='{.status.phase}' | grep Running
   kubectl get pod $subm_engine_pod_name --namespace=$subm_ns -o jsonpath='{.metadata.namespace}' | grep $subm_ns
+}
+
+function verify_subm_engine_deployment() {
+  # Simple verification to ensure that the engine deployment has been created and becomes ready
+   SECONDS="0"
+   while ! kubectl get Deployments -l app=$engine_deployment_name -n $subm_ns | grep -q submariner; do
+     if [ $SECONDS -gt 120 ]; then
+        echo "Timeout waiting for engine Deployment creation"
+        exit 1
+     else
+        ((SECONDS+=2))
+        sleep 2
+     fi
+   done
+
+   replicas=0
+   readyReplicas=0
+
+   SECONDS="0"
+   while [ "$readyReplicas" != "$replicas" ] || [ $readyReplicas -le 0 ]; do
+     if [ $SECONDS -gt 120 ]; then
+        echo "Timeout waiting for ready replicas of the Deployment"
+        exit 1
+     else
+
+        replicas=$(kubectl get Deployment submariner -n $subm_ns -o jsonpath='{.status.replicas}')
+        readyReplicas=$(kubectl get Deployment submariner -n $subm_ns -o jsonpath='{.status.readyReplicas}')
+
+        ((SECONDS+=2))
+        sleep 2
+     fi
+   done
 }
 
 function verify_subm_routeagent_daemonset() {
