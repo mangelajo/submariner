@@ -163,7 +163,8 @@ function create_subm_cr() {
   sed -i "/spec:/a \ \ ceIPSecDebug: \"$ce_ipsec_debug\"" $cr_file
   sed -i "/spec:/a \ \ ceIPSecIKEPort: $ce_ipsec_ikeport" $cr_file
   sed -i "/spec:/a \ \ ceIPSecNATTPort: $ce_ipsec_nattport" $cr_file
-  sed -i "/spec:/a \ \ image: $subm_engine_image_repo:$subm_engine_image_tag" $cr_file
+  sed -i "/spec:/a \ \ repository: $subm_engine_image_repo" $cr_file
+  sed -i "/spec:/a \ \ version: $subm_engine_image_tag" $cr_file
 
   # Show completed CR file for debugging help
   cat $cr_file

@@ -126,7 +126,8 @@ function verify_subm_cr() {
   kubectl get submariner $deployment_name --namespace=$subm_ns -o jsonpath='{.spec.ceIPSecNATTPort}' | grep $ce_ipsec_nattport
   # FIXME: Sometimes this changes between runs, causes failures
   kubectl get submariner $deployment_name --namespace=$subm_ns -o jsonpath='{.spec.ceIPSecPSK}' | grep $SUBMARINER_PSK || true
-  kubectl get submariner $deployment_name --namespace=$subm_ns -o jsonpath='{.spec.image}' | grep $subm_engine_image_repo:$subm_engine_image_tag
+  kubectl get submariner $deployment_name --namespace=$subm_ns -o jsonpath='{.spec.repository}' | grep $subm_engine_image_repo
+  kubectl get submariner $deployment_name --namespace=$subm_ns -o jsonpath='{.spec.version}' | grep $subm_engine_image_tag
   kubectl get submariner $deployment_name --namespace=$subm_ns -o jsonpath='{.spec.size}' | grep $subm_engine_size
   kubectl get submariner $deployment_name --namespace=$subm_ns -o jsonpath='{.spec.broker}' | grep $subm_broker
   kubectl get submariner $deployment_name --namespace=$subm_ns -o jsonpath='{.spec.clusterID}' | grep $context
@@ -279,7 +280,7 @@ function verify_subm_routeagent_pod() {
   for subm_routeagent_pod_name in "${subm_routeagent_pod_names_array[@]}"; do
     echo "Testing Submariner routeagent pod $subm_routeagent_pod_name"
     kubectl get pod $subm_routeagent_pod_name --namespace=$subm_ns -o json
-    kubectl get pod $subm_routeagent_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..image}' | grep $subm_routeagent_image_repo:$subm_engine_image_tag
+    kubectl get pod $subm_routeagent_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..image}' | grep submariner-route-agent:$subm_engine_image_tag
     kubectl get pod $subm_routeagent_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..securityContext.capabilities.add}' | grep ALL
     kubectl get pod $subm_routeagent_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..securityContext.allowPrivilegeEscalation}' | grep "true"
     kubectl get pod $subm_routeagent_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..securityContext.privileged}' | grep "true"
