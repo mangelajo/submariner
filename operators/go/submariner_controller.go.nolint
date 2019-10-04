@@ -2,6 +2,7 @@ package submariner
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 
 	"github.com/go-logr/logr"
@@ -250,9 +251,8 @@ func newPodTemplateForCR(cr *submarinerv1alpha1.Submariner) corev1.PodTemplateSp
 			NodeSelector: map[string]string{"submariner.io/gateway": "true"},
 			Containers: []corev1.Container{
 				{
-					Name:  "submariner",
-					Image: cr.Spec.Image,
-					// TODO: Use var here
+					Name:            "submariner",
+					Image:           getImagePath(cr, engineImage),
 					Command:         []string{"submariner.sh"},
 					SecurityContext: &security_context_all_caps_privilaged,
 					Env: []corev1.EnvVar{
@@ -336,7 +336,7 @@ func newRouteAgentDaemonSet(cr *submarinerv1alpha1.Submariner) *appsv1.DaemonSet
 					Containers: []corev1.Container{
 						{
 							Name:  "submariner-routeagent",
-							Image: "submariner-route-agent:local",
+							Image: getImagePath(cr, routeAgentImage),
 							// FIXME: Should be entrypoint script, find/use correct file for routeagent
 							Command:         []string{"submariner-route-agent.sh"},
 							SecurityContext: &security_context_all_cap_allow_escal,
@@ -364,4 +364,41 @@ func newRouteAgentDaemonSet(cr *submarinerv1alpha1.Submariner) *appsv1.DaemonSet
 	}
 
 	return routeAgentDaemonSet
+}
+
+//TODO: move to a method on the API definitions, as the example shown by the etcd operator here :
+//      https://github.com/coreos/etcd-operator/blob/8347d27afa18b6c76d4a8bb85ad56a2e60927018/pkg/apis/etcd/v1beta2/cluster.go#L185
+func setSubmarinerDefaults(submariner *submarinerv1alpha1.Submariner) {
+
+	spec := submariner.Spec
+	if spec.Repository == "" {
+		// An empty field is converted to the default upstream submariner repository where all images live
+		spec.Repository = "quay.io/submariner"
+	}
+
+	if spec.Version == "" {
+		spec.Version = "latest"
+	}
+}
+
+const (
+	routeAgentImage = "submariner-route-agent"
+	engineImage     = "submariner"
+)
+
+func getImagePath(submariner *submarinerv1alpha1.Submariner, componentImage string) string {
+	var path string
+	spec := submariner.Spec
+
+	// If the repository is "local" we don't append it on the front of the image,
+	// a local repository is used for development, testing and CI when we inject
+	// images in the cluster, for example submariner:local, or submariner-route-agent:local
+	if spec.Repository == "local" {
+		path = componentImage
+	} else {
+		path = fmt.Sprintf("%s/%s", spec.Repository, componentImage)
+	}
+
+	path = fmt.Sprintf("%s:%s", path, spec.Version)
+	return path
 }

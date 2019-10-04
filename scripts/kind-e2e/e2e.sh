@@ -225,12 +225,10 @@ function create_subm_vars() {
   serviceCIDR_cluster2=100.95.0.0/16
   serviceCIDR_cluster3=100.96.0.0/16
   natEnabled=false
-  subm_routeagent_image_repo=submariner-route-agent
-  subm_routeagent_image_tag=local
-  subm_routeagent_image_policy=IfNotPresent
-  subm_engine_image_repo=submariner
+
+  subm_engine_image_repo=local
   subm_engine_image_tag=local
-  subm_engine_image_policy=IfNotPresent
+
   # FIXME: Actually act on this size request in controller
   subm_engine_size=3
   subm_colorcodes=blue
