@@ -150,9 +150,9 @@ function create_subm_cr() {
   sed -i "/spec:/a \ \ clusterID: $context" $cr_file
   sed -i "/spec:/a \ \ colorCodes: $subm_colorcodes" $cr_file
   # NB: Quoting bool-like vars is required or Go will type as bool and fail when set as env vars as strs
-  sed -i "/spec:/a \ \ debug: \"$subm_debug\"" $cr_file
+  sed -i "/spec:/a \ \ debug: $subm_debug" $cr_file
   # NB: Quoting bool-like vars is required or Go will type as bool and fail when set as env vars as strs
-  sed -i "/spec:/a \ \ natEnabled: \"$natEnabled\"" $cr_file
+  sed -i "/spec:/a \ \ natEnabled: $natEnabled" $cr_file
   sed -i "/spec:/a \ \ broker: $subm_broker" $cr_file
   sed -i "/spec:/a \ \ brokerK8sApiServer: $SUBMARINER_BROKER_URL" $cr_file
   sed -i "/spec:/a \ \ brokerK8sApiServerToken: $SUBMARINER_BROKER_TOKEN" $cr_file
@@ -160,7 +160,7 @@ function create_subm_cr() {
   sed -i "/spec:/a \ \ brokerK8sCA: $SUBMARINER_BROKER_CA" $cr_file
   sed -i "/spec:/a \ \ ceIPSecPSK: $SUBMARINER_PSK" $cr_file
   # NB: Quoting bool-like vars is required or Go will type as bool and fail when set as env vars as strs
-  sed -i "/spec:/a \ \ ceIPSecDebug: \"$ce_ipsec_debug\"" $cr_file
+  sed -i "/spec:/a \ \ ceIPSecDebug: $ce_ipsec_debug" $cr_file
   sed -i "/spec:/a \ \ ceIPSecIKEPort: $ce_ipsec_ikeport" $cr_file
   sed -i "/spec:/a \ \ ceIPSecNATTPort: $ce_ipsec_nattport" $cr_file
   sed -i "/spec:/a \ \ repository: $subm_engine_image_repo" $cr_file
