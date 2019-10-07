@@ -67,7 +67,6 @@ function add_subm_engine_to_operator() {
   sed -i '/SubmarinerSpec struct/a \ \ Namespace string `json:"namespace"`' $types_file
   sed -i '/SubmarinerSpec struct/a \ \ ClusterCIDR string `json:"clusterCIDR"`' $types_file
   sed -i '/SubmarinerSpec struct/a \ \ ServiceCIDR string `json:"serviceCIDR"`' $types_file
-  sed -i '/SubmarinerSpec struct/a \ \ Token string `json:"token"`' $types_file
   sed -i '/SubmarinerSpec struct/a \ \ ClusterID string `json:"clusterID"`' $types_file
   sed -i '/SubmarinerSpec struct/a \ \ ColorCodes string `json:"colorCodes,omitempty"`' $types_file
   sed -i '/SubmarinerSpec struct/a \ \ Debug bool `json:"debug"`' $types_file

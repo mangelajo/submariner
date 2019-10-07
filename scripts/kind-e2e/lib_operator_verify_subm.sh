@@ -58,7 +58,6 @@ function verify_subm_crd() {
     kubectl get crd $crd_name -o jsonpath='{.spec.validation.openAPIV3Schema.properties.spec.required}' | grep submarinerDebug
     kubectl get crd $crd_name -o jsonpath='{.spec.validation.openAPIV3Schema.properties.spec.required}' | grep submarinerColorcodes
     kubectl get crd $crd_name -o jsonpath='{.spec.validation.openAPIV3Schema.properties.spec.required}' | grep submarinerClusterid
-    kubectl get crd $crd_name -o jsonpath='{.spec.validation.openAPIV3Schema.properties.spec.required}' | grep submarinerToken
     kubectl get crd $crd_name -o jsonpath='{.spec.validation.openAPIV3Schema.properties.spec.required}' | grep submarinerServicecidr
     kubectl get crd $crd_name -o jsonpath='{.spec.validation.openAPIV3Schema.properties.spec.required}' | grep submarinerClustercidr
     kubectl get crd $crd_name -o jsonpath='{.spec.validation.openAPIV3Schema.properties.spec.required}' | grep submarinerNamespace
@@ -142,7 +141,6 @@ function verify_subm_cr() {
     kubectl get submariner $deployment_name --namespace=$subm_ns -o jsonpath='{.spec.serviceCIDR}' | grep $serviceCIDR_cluster3
     kubectl get submariner $deployment_name --namespace=$subm_ns -o jsonpath='{.spec.clusterCIDR}' | grep $clusterCIDR_cluster3
   fi
-  kubectl get submariner $deployment_name --namespace=$subm_ns -o jsonpath='{.spec.token}' | grep $subm_token
 }
 
 function verify_subm_op_pod() {
@@ -181,12 +179,6 @@ function verify_subm_engine_pod() {
   elif [[ $context = cluster3 ]]; then
     kubectl get pod $subm_engine_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..env}' | grep "name:SUBMARINER_SERVICECIDR value:$serviceCIDR_cluster3"
     kubectl get pod $subm_engine_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..env}' | grep "name:SUBMARINER_CLUSTERCIDR value:$clusterCIDR_cluster3"
-  fi
-  if [ "$deploy_operator" = true ]; then
-    kubectl get pod $subm_engine_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..env}' | grep "name:SUBMARINER_TOKEN value:$subm_token"
-  else
-    # FIXME: This token value is null with default Helm deploy
-    kubectl get pod $subm_engine_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..env}' | grep "name:SUBMARINER_TOKEN"
   fi
   kubectl get pod $subm_engine_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..env}' | grep "name:SUBMARINER_CLUSTERID value:$context"
   kubectl get pod $subm_engine_pod_name --namespace=$subm_ns -o jsonpath='{.spec.containers..env}' | grep "name:SUBMARINER_COLORCODES value:$subm_colorcodes"
@@ -367,12 +359,6 @@ function verify_subm_engine_container() {
     kubectl exec -it $subm_engine_pod_name --namespace=$subm_ns -- env | grep "SUBMARINER_SERVICECIDR=$serviceCIDR_cluster3"
     kubectl exec -it $subm_engine_pod_name --namespace=$subm_ns -- env | grep "SUBMARINER_CLUSTERCIDR=$clusterCIDR_cluster3"
   fi
-  if [ "$deploy_operator" = true ]; then
-    kubectl exec -it $subm_engine_pod_name --namespace=$subm_ns -- env | grep "SUBMARINER_TOKEN=$subm_token"
-  else
-    # FIXME: This is null for Helm-based deploys
-    kubectl exec -it $subm_engine_pod_name --namespace=$subm_ns -- env | grep "SUBMARINER_TOKEN="
-  fi
   kubectl exec -it $subm_engine_pod_name --namespace=$subm_ns -- env | grep "SUBMARINER_COLORCODES=$subm_colorcode"
   kubectl exec -it $subm_engine_pod_name --namespace=$subm_ns -- env | grep "SUBMARINER_NATENABLED=$natEnabled"
   # FIXME: This fails on redeploys
@@ -463,7 +449,6 @@ function verify_subm_broker_secrets() {
   kubectl get secret $subm_broker_secret_name -n $subm_broker_ns -o jsonpath='{.metadata.namespace}' | grep $subm_broker_ns
   # Must use this jsonpath notation to access key with dot.in.name
   kubectl get secret $subm_broker_secret_name -n $subm_broker_ns -o "jsonpath={.data['ca\.crt']}" | grep $SUBMARINER_BROKER_CA
-  kubectl get secret $subm_broker_secret_name -n $subm_broker_ns -o jsonpath='{.data.token}' | base64 --decode | grep $SUBMARINER_BROKER_TOKEN
 }
 
 function verify_subm_engine_secrets() {
@@ -507,8 +492,6 @@ function verify_subm_engine_secrets() {
   # FIXME: There seems to be a strange error where these substantially match, but eventually actually are different
   kubectl get secret $subm_engine_secret_name -n $subm_ns -o "jsonpath={.data['ca\.crt']}" | grep ${SUBMARINER_BROKER_CA:0:50}
   #kubectl get secret $subm_engine_secret_name -n $subm_ns -o "jsonpath={.data['ca\.crt']}" | grep ${SUBMARINER_BROKER_CA:0:161}
-  kubectl get secret $subm_engine_secret_name -n $subm_ns -o jsonpath='{.data.token}' | base64 --decode | grep ${SUBMARINER_BROKER_TOKEN:0:50}
-  #kubectl get secret $subm_engine_secret_name -n $subm_ns -o jsonpath='{.data.token}' | base64 --decode | grep ${SUBMARINER_BROKER_TOKEN:0:149}
 }
 
 function verify_subm_routeagent_secrets() {
@@ -553,6 +536,4 @@ function verify_subm_routeagent_secrets() {
   # FIXME: There seems to be a strange error where these substantially match, but eventually actually are different
   kubectl get secret $subm_routeagent_secret_name -n $subm_ns -o "jsonpath={.data['ca\.crt']}" | grep ${SUBMARINER_BROKER_CA:0:50}
   #kubectl get secret $subm_routeagent_secret_name -n $subm_ns -o "jsonpath={.data['ca\.crt']}" | grep ${SUBMARINER_BROKER_CA:0:162}
-  kubectl get secret $subm_routeagent_secret_name -n $subm_ns -o jsonpath='{.data.token}' | base64 --decode | grep ${SUBMARINER_BROKER_TOKEN:0:50}
-  #kubectl get secret $subm_routeagent_secret_name -n $subm_ns -o jsonpath='{.data.token}' | base64 --decode | grep ${SUBMARINER_BROKER_TOKEN:0:149}
 }
