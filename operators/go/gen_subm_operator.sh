@@ -69,20 +69,20 @@ function add_subm_engine_to_operator() {
   sed -i '/SubmarinerSpec struct/a \ \ ServiceCIDR string `json:"serviceCIDR"`' $types_file
   sed -i '/SubmarinerSpec struct/a \ \ Token string `json:"token"`' $types_file
   sed -i '/SubmarinerSpec struct/a \ \ ClusterID string `json:"clusterID"`' $types_file
-  sed -i '/SubmarinerSpec struct/a \ \ ColorCodes string `json:"colorCodes"`' $types_file
-  sed -i '/SubmarinerSpec struct/a \ \ Debug string `json:"debug"`' $types_file
-  sed -i '/SubmarinerSpec struct/a \ \ NatEnabled string `json:"natEnabled"`' $types_file
+  sed -i '/SubmarinerSpec struct/a \ \ ColorCodes string `json:"colorCodes,omitempty"`' $types_file
+  sed -i '/SubmarinerSpec struct/a \ \ Debug bool `json:"debug"`' $types_file
+  sed -i '/SubmarinerSpec struct/a \ \ NatEnabled bool `json:"natEnabled"`' $types_file
   sed -i '/SubmarinerSpec struct/a \ \ Broker string `json:"broker"`' $types_file
   sed -i '/SubmarinerSpec struct/a \ \ BrokerK8sApiServer string `json:"brokerK8sApiServer"`' $types_file
   sed -i '/SubmarinerSpec struct/a \ \ BrokerK8sApiServerToken string `json:"brokerK8sApiServerToken"`' $types_file
   sed -i '/SubmarinerSpec struct/a \ \ BrokerK8sRemoteNamespace string `json:"brokerK8sRemoteNamespace"`' $types_file
   sed -i '/SubmarinerSpec struct/a \ \ BrokerK8sCA string `json:"brokerK8sCA"`' $types_file
   sed -i '/SubmarinerSpec struct/a \ \ CeIPSecPSK string `json:"ceIPSecPSK"`' $types_file
-  sed -i '/SubmarinerSpec struct/a \ \ CeIPSecDebug string `json:"ceIPSecDebug"`' $types_file
+  sed -i '/SubmarinerSpec struct/a \ \ CeIPSecDebug bool `json:"ceIPSecDebug"`' $types_file
   sed -i '/SubmarinerSpec struct/a \ \ CeIPSecIKEPort int `json:"ceIPSecIKEPort,omitempty"`' $types_file
   sed -i '/SubmarinerSpec struct/a \ \ CeIPSecNATTPort int `json:"ceIPSecNATTPort,omitempty"`' $types_file
-  sed -i '/SubmarinerSpec struct/a \ \ Repository string `json:"repository"`' $types_file
-  sed -i '/SubmarinerSpec struct/a \ \ Version string `json:"version"`' $types_file
+  sed -i '/SubmarinerSpec struct/a \ \ Repository string `json:"repository,omitempty"`' $types_file
+  sed -i '/SubmarinerSpec struct/a \ \ Version string `json:"version,omitempty"`' $types_file
 
   # Define status fields, commented example
   # sed -i '/SubmarinerStatus struct/a \ \ PodNames []string `json:"pod_names"`' $types_file
