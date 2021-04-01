@@ -304,7 +304,7 @@ func (i *libreswan) ConnectToEndpoint(endpointInfo *natdiscovery.NATEndpointInfo
 
 	connectionMode := i.calculateOperationMode(endpoint)
 
-	klog.Infof("Creating connection(s) for %v in %s mode", endpoint, operationModeName[connectionMode])
+	klog.Infof("Creating connection(s) for %v in %s mode", endpoint, connectionMode)
 
 	if len(leftSubnets) > 0 && len(rightSubnets) > 0 {
 		for lsi, leftSubnet := range leftSubnets {

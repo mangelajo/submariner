@@ -30,12 +30,6 @@ const (
 	operationModeClient
 )
 
-var operationModeName = map[operationMode]string{
-	operationModeBidirectional: "bi-directional",
-	operationModeServer:        "server",
-	operationModeClient:        "client",
-}
-
 func (i *libreswan) calculateOperationMode(remoteEndpoint *types.SubmarinerEndpoint) operationMode {
 	defaultValue := false
 	leftPreferred, err := i.localEndpoint.Spec.GetBackendBool(v1.PreferredServerConfig, &defaultValue)
@@ -54,7 +48,9 @@ func (i *libreswan) calculateOperationMode(remoteEndpoint *types.SubmarinerEndpo
 
 	if *leftPreferred && !*rightPreferred {
 		return operationModeServer
-	} else if *rightPreferred && !*leftPreferred {
+	}
+
+	if *rightPreferred && !*leftPreferred {
 		return operationModeClient
 	}
 
@@ -64,4 +60,17 @@ func (i *libreswan) calculateOperationMode(remoteEndpoint *types.SubmarinerEndpo
 	}
 
 	return operationModeClient
+}
+
+func (m operationMode) String() string {
+	switch m {
+	case operationModeBidirectional:
+		return "bi-directional"
+	case operationModeServer:
+		return "server"
+	case operationModeClient:
+		return "client"
+	default:
+		return "unknown"
+	}
 }

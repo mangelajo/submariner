@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package localendpoint_test
+package endpoint_test
 
 import (
 	"testing"
@@ -22,7 +22,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestUtil(t *testing.T) {
+func TestEndpoint(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Local Endpoint Suite")
+	RunSpecs(t, "Endpoint Suite")
 }

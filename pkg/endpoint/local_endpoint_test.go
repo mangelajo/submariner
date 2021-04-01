@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package localendpoint_test
+package endpoint_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -21,11 +21,11 @@ import (
 	v1 "k8s.io/api/core/v1"
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/submariner-io/submariner/pkg/localendpoint"
+	"github.com/submariner-io/submariner/pkg/endpoint"
 	"github.com/submariner-io/submariner/pkg/types"
 )
 
-var _ = Describe("Function GetLocalEndpoint", func() {
+var _ = Describe("GetLocal", func() {
 	var submSpec types.SubmarinerSpecification
 	var node *v1.Node
 	const (
@@ -54,7 +54,7 @@ var _ = Describe("Function GetLocalEndpoint", func() {
 	})
 
 	It("should return a valid SubmarinerEndpoint object", func() {
-		endpoint, err := localendpoint.GetLocalEndpoint(submSpec, testPrivateIP, node)
+		endpoint, err := endpoint.GetLocal(submSpec, testPrivateIP, node)
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(endpoint.Spec.ClusterID).To(Equal("east"))
@@ -70,7 +70,7 @@ var _ = Describe("Function GetLocalEndpoint", func() {
 	When("no NAT discovery port label is set on the node", func() {
 		It("should return a valid SubmarinerEndpoint object", func() {
 			delete(node.Labels, testNATTPortLabel)
-			_, err := localendpoint.GetLocalEndpoint(submSpec, testPrivateIP, node)
+			_, err := endpoint.GetLocal(submSpec, testPrivateIP, node)
 			Expect(err).ToNot(HaveOccurred())
 		})
 	})

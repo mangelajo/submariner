@@ -50,7 +50,7 @@ import (
 	submarinerClientset "github.com/submariner-io/submariner/pkg/client/clientset/versioned"
 	"github.com/submariner-io/submariner/pkg/controllers/datastoresyncer"
 	"github.com/submariner-io/submariner/pkg/controllers/tunnel"
-	"github.com/submariner-io/submariner/pkg/localendpoint"
+	"github.com/submariner-io/submariner/pkg/endpoint"
 	"github.com/submariner-io/submariner/pkg/natdiscovery"
 	"github.com/submariner-io/submariner/pkg/node"
 	"github.com/submariner-io/submariner/pkg/types"
@@ -125,7 +125,7 @@ func main() {
 
 	submSpec.CableDriver = strings.ToLower(submSpec.CableDriver)
 
-	localEndpoint, err := localendpoint.GetLocalEndpoint(submSpec, util.GetLocalIP(), localNode)
+	localEndpoint, err := endpoint.GetLocal(submSpec, util.GetLocalIP(), localNode)
 
 	if err != nil {
 		klog.Fatalf("Error creating local endpoint object from %#v: %v", submSpec, err)
